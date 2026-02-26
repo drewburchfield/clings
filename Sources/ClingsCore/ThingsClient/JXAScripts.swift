@@ -273,11 +273,9 @@ public enum JXAScripts {
         name: String? = nil,
         notes: String? = nil,
         dueDate: Date? = nil,
-        when: Date? = nil,
         tags: [String]? = nil
     ) -> String {
         let dueDateISO = dueDate.map { ISO8601DateFormatter().string(from: $0) }
-        let whenISO = when.map { ISO8601DateFormatter().string(from: $0) }
 
         // Tags are handled via AppleScript for reliability.
         _ = tags  // Tags are applied separately.
@@ -294,7 +292,6 @@ public enum JXAScripts {
             \(name != nil ? "todo.name = '\(name!.jxaEscaped)';" : "")
             \(notes != nil ? "todo.notes = '\(notes!.jxaEscaped)';" : "")
             \(dueDateISO != nil ? "todo.dueDate = new Date('\(dueDateISO!)');" : "")
-            \(whenISO != nil ? "todo.activationDate = new Date('\(whenISO!)');" : "")
 
             return JSON.stringify({ success: true, id: '\(id.jxaEscaped)' });
         })()

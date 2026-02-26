@@ -244,24 +244,8 @@ struct JXAScriptsTests {
             #expect(script.contains("Line1\\nLine2"))
         }
 
-        @Test func withWhen() {
-            let date = Date()
-            let script = JXAScripts.updateTodo(id: "todo-123", when: date)
-            #expect(script.contains("todo.activationDate = new Date("))
-        }
-
-        @Test func withWhenDoesNotAffectDueDate() {
-            let date = Date()
-            let script = JXAScripts.updateTodo(id: "todo-123", when: date)
-            #expect(!script.contains("todo.dueDate"))
-        }
-
-        @Test func withBothDueDateAndWhen() {
-            let date = Date()
-            let script = JXAScripts.updateTodo(id: "todo-123", dueDate: date, when: date)
-            #expect(script.contains("todo.dueDate = new Date("))
-            #expect(script.contains("todo.activationDate = new Date("))
-        }
+        // Note: --when uses Things URL scheme (activationDate is read-only in JXA).
+        // URL scheme tests would require integration testing with Things 3.
     }
 
     @Suite("Create Todo Script")

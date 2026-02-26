@@ -202,10 +202,10 @@ struct UpdateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "New due date (YYYY-MM-DD or 'today', 'tomorrow')")
     var due: String?
 
-    @Option(name: .long, help: "Schedule for a date (YYYY-MM-DD, 'today', 'tomorrow')")
+    @Option(name: .long, help: "Schedule for a date ('today', 'tomorrow', 'evening', 'anytime', 'someday', or YYYY-MM-DD). Requires auth token.")
     var when: String?
 
-    @Option(name: .long, help: "Move to a heading within the task's project (requires auth token)")
+    @Option(name: .long, help: "Move to a heading within the task's project. Requires auth token.")
     var heading: String?
 
     @Option(name: .long, parsing: .upToNextOption, help: "New tags (replaces existing)")
@@ -230,31 +230,21 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
-        // Parse when date if provided
-        var whenDate: Date? = nil
-        if let whenStr = when {
-            whenDate = parseDate(whenStr)
-            if whenDate == nil {
-                throw ThingsError.invalidState("Invalid date format: \(whenStr). Use YYYY-MM-DD, 'today', or 'tomorrow'.")
-            }
-        }
-
-        // Update the todo (name, notes, dueDate, when, tags)
-        let hasStandardUpdates = name != nil || notes != nil || dueDate != nil || whenDate != nil || !tags.isEmpty
-        if hasStandardUpdates {
+        // Update via JXA (name, notes, dueDate, tags)
+        let hasJXAUpdates = name != nil || notes != nil || dueDate != nil || !tags.isEmpty
+        if hasJXAUpdates {
             try await client.updateTodo(
                 id: id,
                 name: name,
                 notes: notes,
                 dueDate: dueDate,
-                when: whenDate,
                 tags: tags.isEmpty ? nil : tags
             )
         }
 
-        // Handle heading via Things URL scheme (requires auth token)
-        if let heading = heading {
-            try setHeading(id: id, heading: heading)
+        // Handle when and heading via Things URL scheme (activationDate is read-only in JXA)
+        if when != nil || heading != nil {
+            try updateViaURLScheme(id: id, when: when, heading: heading)
         }
 
         let formatter: OutputFormatter = output.json
@@ -282,24 +272,31 @@ struct UpdateCommand: AsyncParsableCommand {
         return formatter.date(from: str)
     }
 
-    private func setHeading(id: String, heading: String) throws {
+    private func updateViaURLScheme(id: String, when: String?, heading: String?) throws {
         let token: String
         do {
             token = try AuthTokenStore.loadToken()
         } catch {
             throw ThingsError.invalidState(
-                "Things auth token required for --heading. Set with: clings config set-auth-token <token>"
+                "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
             )
         }
 
-        var components = URLComponents(string: "things:///update")!
-        components.queryItems = [
+        var queryItems = [
             URLQueryItem(name: "auth-token", value: token),
             URLQueryItem(name: "id", value: id),
-            URLQueryItem(name: "heading", value: heading),
         ]
+        if let when = when {
+            queryItems.append(URLQueryItem(name: "when", value: when))
+        }
+        if let heading = heading {
+            queryItems.append(URLQueryItem(name: "heading", value: heading))
+        }
+
+        var components = URLComponents(string: "things:///update")!
+        components.queryItems = queryItems
         guard let url = components.url?.absoluteString else {
-            throw ThingsError.operationFailed("Failed to construct Things URL for heading update")
+            throw ThingsError.operationFailed("Failed to construct Things URL")
         }
 
         let process = Process()
@@ -308,7 +305,7 @@ struct UpdateCommand: AsyncParsableCommand {
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
-            throw ThingsError.operationFailed("Failed to set heading via Things URL scheme (exit code \(process.terminationStatus))")
+            throw ThingsError.operationFailed("Failed to update via Things URL scheme (exit code \(process.terminationStatus))")
         }
     }
 }

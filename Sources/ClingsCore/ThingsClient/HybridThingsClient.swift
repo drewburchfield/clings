@@ -152,10 +152,10 @@ public final class HybridThingsClient: ThingsClientProtocol, @unchecked Sendable
         }
     }
 
-    public func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, when: Date? = nil, tags: [String]?) async throws {
-        // Handle non-tag updates via JXA (name, notes, dueDate, when work fine)
-        if name != nil || notes != nil || dueDate != nil || when != nil {
-            let script = JXAScripts.updateTodo(id: id, name: name, notes: notes, dueDate: dueDate, when: when, tags: nil)
+    public func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, tags: [String]?) async throws {
+        // Handle non-tag updates via JXA (name, notes, dueDate work fine)
+        if name != nil || notes != nil || dueDate != nil {
+            let script = JXAScripts.updateTodo(id: id, name: name, notes: notes, dueDate: dueDate, tags: nil)
             let result = try await jxaBridge.executeJSON(script, as: MutationResult.self)
             if !result.success {
                 throw ThingsError.operationFailed(result.error ?? "Unknown error")
