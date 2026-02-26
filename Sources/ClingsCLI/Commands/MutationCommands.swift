@@ -291,12 +291,24 @@ struct UpdateCommand: AsyncParsableCommand {
                 "Things auth token required for --heading. Set with: clings config set-auth-token <token>"
             )
         }
-        let encoded = heading.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? heading
-        let url = "things:///update?auth-token=\(token)&id=\(id)&heading=\(encoded)"
+
+        var components = URLComponents(string: "things:///update")!
+        components.queryItems = [
+            URLQueryItem(name: "auth-token", value: token),
+            URLQueryItem(name: "id", value: id),
+            URLQueryItem(name: "heading", value: heading),
+        ]
+        guard let url = components.url?.absoluteString else {
+            throw ThingsError.operationFailed("Failed to construct Things URL for heading update")
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = [url]
         try process.run()
         process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw ThingsError.operationFailed("Failed to set heading via Things URL scheme (exit code \(process.terminationStatus))")
+        }
     }
 }

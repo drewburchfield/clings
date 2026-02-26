@@ -27,10 +27,14 @@ public enum AuthTokenStore {
         return token
     }
 
-    /// Save an auth token to the config directory.
+    /// Save an auth token to the config directory with restricted permissions (0600).
     public static func saveToken(_ token: String) throws {
         try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
-        try token.trimmingCharacters(in: .whitespacesAndNewlines)
-            .write(to: tokenFile, atomically: true, encoding: .utf8)
+        let tokenData = Data(token.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
+        FileManager.default.createFile(
+            atPath: tokenFile.path,
+            contents: tokenData,
+            attributes: [.posixPermissions: 0o600]
+        )
     }
 }
