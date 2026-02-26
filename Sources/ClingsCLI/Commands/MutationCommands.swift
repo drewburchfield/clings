@@ -231,11 +231,19 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
+        // Validate --heading is not empty/whitespace
+        if let heading = heading {
+            guard !heading.trimmingCharacters(in: .whitespaces).isEmpty else {
+                throw ThingsError.invalidState("--heading value cannot be empty")
+            }
+        }
+
         // Pre-validate auth token before any mutations to avoid partial updates
         let needsURLScheme = when != nil || heading != nil
+        var prevalidatedToken: String? = nil
         if needsURLScheme {
             do {
-                _ = try AuthTokenStore.loadToken()
+                prevalidatedToken = try AuthTokenStore.loadToken()
             } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
                 throw ThingsError.invalidState(
                     "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
@@ -273,8 +281,20 @@ struct UpdateCommand: AsyncParsableCommand {
         }
 
         // Handle when and heading via Things URL scheme (activationDate is read-only in JXA)
-        if needsURLScheme {
-            try updateViaURLScheme(id: id, when: when, heading: heading)
+        if needsURLScheme, let token = prevalidatedToken {
+            do {
+                try updateViaURLScheme(id: id, when: when, heading: heading, token: token)
+            } catch {
+                if hasJXAUpdates {
+                    let jxaFields = [name != nil ? "name" : nil, notes != nil ? "notes" : nil,
+                                   dueDate != nil ? "due date" : nil, !tags.isEmpty ? "tags" : nil]
+                        .compactMap { $0 }.joined(separator: ", ")
+                    throw ThingsError.operationFailed(
+                        "Partial update: \(jxaFields) updated, but --when/--heading failed: \(error.localizedDescription)"
+                    )
+                }
+                throw error
+            }
         }
 
         let formatter: OutputFormatter = output.json
@@ -303,10 +323,7 @@ struct UpdateCommand: AsyncParsableCommand {
         return formatter.date(from: str)
     }
 
-    private func updateViaURLScheme(id: String, when: String?, heading: String?) throws {
-        // Token was pre-validated in run(), so this should not fail
-        let token = try AuthTokenStore.loadToken()
-
+    private func updateViaURLScheme(id: String, when: String?, heading: String?, token: String) throws {
         var queryItems = [
             URLQueryItem(name: "auth-token", value: token),
             URLQueryItem(name: "id", value: id),
@@ -318,7 +335,9 @@ struct UpdateCommand: AsyncParsableCommand {
             queryItems.append(URLQueryItem(name: "heading", value: heading))
         }
 
-        var components = URLComponents(string: "things:///update")!
+        guard var components = URLComponents(string: "things:///update") else {
+            throw ThingsError.operationFailed("Internal error: failed to parse Things URL base")
+        }
         components.queryItems = queryItems
         guard let url = components.url?.absoluteString else {
             throw ThingsError.operationFailed("Failed to construct Things URL")

@@ -50,7 +50,7 @@ public enum AuthTokenStore {
         }
         defer { close(fd) }
         let written = tokenData.withUnsafeBytes { buffer in
-            guard let base = buffer.baseAddress else { return 0 }
+            guard let base = buffer.baseAddress else { return -1 }
             return write(fd, base, buffer.count)
         }
         guard written == tokenData.count else {
