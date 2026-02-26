@@ -30,19 +30,28 @@ public enum AuthTokenStore {
     /// Save an auth token to the config directory with restricted permissions (0600).
     /// Uses POSIX open() to ensure the file is never world-readable, even briefly.
     public static func saveToken(_ token: String) throws {
-        try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+        } catch {
+            throw ThingsError.operationFailed(
+                "Failed to create config directory at \(configDir.path): \(error.localizedDescription)"
+            )
+        }
         let tokenData = Data(token.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
         let path = tokenFile.path
         let fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
         guard fd >= 0 else {
-            throw ThingsError.operationFailed("Failed to open auth token file at \(path)")
+            let reason = String(cString: strerror(errno))
+            throw ThingsError.operationFailed("Failed to open auth token file at \(path): \(reason)")
         }
         defer { close(fd) }
         let written = tokenData.withUnsafeBytes { buffer in
-            write(fd, buffer.baseAddress!, buffer.count)
+            guard let base = buffer.baseAddress else { return 0 }
+            return write(fd, base, buffer.count)
         }
         guard written == tokenData.count else {
-            throw ThingsError.operationFailed("Failed to write auth token to \(path)")
+            let reason = String(cString: strerror(errno))
+            throw ThingsError.operationFailed("Failed to write auth token to \(path): \(reason)")
         }
     }
 }

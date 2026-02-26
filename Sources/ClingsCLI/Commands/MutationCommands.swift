@@ -234,9 +234,15 @@ struct UpdateCommand: AsyncParsableCommand {
         // Pre-validate auth token before any mutations to avoid partial updates
         let needsURLScheme = when != nil || heading != nil
         if needsURLScheme {
-            guard (try? AuthTokenStore.loadToken()) != nil else {
+            do {
+                _ = try AuthTokenStore.loadToken()
+            } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
                 throw ThingsError.invalidState(
                     "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
+                )
+            } catch {
+                throw ThingsError.operationFailed(
+                    "Failed to read auth token: \(error.localizedDescription). Try re-setting with: clings config set-auth-token <token>"
                 )
             }
         }
