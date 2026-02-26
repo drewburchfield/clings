@@ -37,7 +37,11 @@ public enum AuthTokenStore {
                 "Failed to create config directory at \(configDir.path): \(error.localizedDescription)"
             )
         }
-        let tokenData = Data(token.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw ThingsError.invalidState("Auth token cannot be empty")
+        }
+        let tokenData = Data(trimmed.utf8)
         let path = tokenFile.path
         let fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
         guard fd >= 0 else {
