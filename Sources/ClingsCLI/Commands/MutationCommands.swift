@@ -310,7 +310,7 @@ struct UpdateCommand: AsyncParsableCommand {
             URLQueryItem(name: "id", value: id),
         ]
         if let when = when {
-            queryItems.append(URLQueryItem(name: "when", value: when))
+            queryItems.append(URLQueryItem(name: "when", value: when.lowercased()))
         }
         if let heading = heading {
             queryItems.append(URLQueryItem(name: "heading", value: heading))
