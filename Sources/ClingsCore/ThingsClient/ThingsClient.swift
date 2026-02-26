@@ -62,7 +62,7 @@ public protocol ThingsClientProtocol: Sendable {
     func cancelTodo(id: String) async throws
     func deleteTodo(id: String) async throws
     func moveTodo(id: String, toProject: String) async throws
-    func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, tags: [String]?) async throws
+    func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, when: Date?, tags: [String]?) async throws
 
     // Search
     func search(query: String) async throws -> [Todo]
@@ -282,10 +282,10 @@ public actor ThingsClient: ThingsClientProtocol {
         }
     }
 
-    public func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, tags: [String]?) async throws {
-        // Handle non-tag updates via JXA (name, notes, dueDate work fine)
-        if name != nil || notes != nil || dueDate != nil {
-            let script = JXAScripts.updateTodo(id: id, name: name, notes: notes, dueDate: dueDate, tags: nil)
+    public func updateTodo(id: String, name: String?, notes: String?, dueDate: Date?, when: Date? = nil, tags: [String]?) async throws {
+        // Handle non-tag updates via JXA (name, notes, dueDate, when work fine)
+        if name != nil || notes != nil || dueDate != nil || when != nil {
+            let script = JXAScripts.updateTodo(id: id, name: name, notes: notes, dueDate: dueDate, when: when, tags: nil)
             let result = try await bridge.executeJSON(script, as: MutationResult.self)
             if !result.success {
                 throw ThingsError.operationFailed(result.error ?? "Unknown error")

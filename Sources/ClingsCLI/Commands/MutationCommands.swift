@@ -184,6 +184,8 @@ struct UpdateCommand: AsyncParsableCommand {
           clings update ABC123 --name "New title"
           clings update ABC123 --notes "Updated notes"
           clings update ABC123 --due 2024-12-25
+          clings update ABC123 --when tomorrow
+          clings update ABC123 --heading "Waiting on them"
           clings update ABC123 --tags work,urgent
         """
     )
@@ -200,6 +202,12 @@ struct UpdateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "New due date (YYYY-MM-DD or 'today', 'tomorrow')")
     var due: String?
 
+    @Option(name: .long, help: "Schedule for a date (YYYY-MM-DD, 'today', 'tomorrow')")
+    var when: String?
+
+    @Option(name: .long, help: "Move to a heading within the task's project (requires auth token)")
+    var heading: String?
+
     @Option(name: .long, parsing: .upToNextOption, help: "New tags (replaces existing)")
     var tags: [String] = []
 
@@ -207,8 +215,8 @@ struct UpdateCommand: AsyncParsableCommand {
 
     func run() async throws {
         // Check if any update options provided
-        guard name != nil || notes != nil || due != nil || !tags.isEmpty else {
-            throw ThingsError.invalidState("No update options provided. Use --name, --notes, --due, or --tags.")
+        guard name != nil || notes != nil || due != nil || when != nil || heading != nil || !tags.isEmpty else {
+            throw ThingsError.invalidState("No update options provided. Use --name, --notes, --due, --when, --heading, or --tags.")
         }
 
         let client = ThingsClientFactory.create()
@@ -222,14 +230,32 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
-        // Update the todo
-        try await client.updateTodo(
-            id: id,
-            name: name,
-            notes: notes,
-            dueDate: dueDate,
-            tags: tags.isEmpty ? nil : tags
-        )
+        // Parse when date if provided
+        var whenDate: Date? = nil
+        if let whenStr = when {
+            whenDate = parseDate(whenStr)
+            if whenDate == nil {
+                throw ThingsError.invalidState("Invalid date format: \(whenStr). Use YYYY-MM-DD, 'today', or 'tomorrow'.")
+            }
+        }
+
+        // Update the todo (name, notes, dueDate, when, tags)
+        let hasStandardUpdates = name != nil || notes != nil || dueDate != nil || whenDate != nil || !tags.isEmpty
+        if hasStandardUpdates {
+            try await client.updateTodo(
+                id: id,
+                name: name,
+                notes: notes,
+                dueDate: dueDate,
+                when: whenDate,
+                tags: tags.isEmpty ? nil : tags
+            )
+        }
+
+        // Handle heading via Things URL scheme (requires auth token)
+        if let heading = heading {
+            try setHeading(id: id, heading: heading)
+        }
 
         let formatter: OutputFormatter = output.json
             ? JSONOutputFormatter()
@@ -254,5 +280,23 @@ struct UpdateCommand: AsyncParsableCommand {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: str)
+    }
+
+    private func setHeading(id: String, heading: String) throws {
+        let token: String
+        do {
+            token = try AuthTokenStore.loadToken()
+        } catch {
+            throw ThingsError.invalidState(
+                "Things auth token required for --heading. Set with: clings config set-auth-token <token>"
+            )
+        }
+        let encoded = heading.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? heading
+        let url = "things:///update?auth-token=\(token)&id=\(id)&heading=\(encoded)"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = [url]
+        try process.run()
+        process.waitUntilExit()
     }
 }
