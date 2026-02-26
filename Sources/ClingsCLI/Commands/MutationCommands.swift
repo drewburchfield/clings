@@ -231,7 +231,8 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
-        // Validate --heading is not empty/whitespace and contains no newlines
+        // Validate and trim --heading
+        let resolvedHeading: String?
         if let heading = heading {
             let trimmed = heading.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else {
@@ -240,10 +241,13 @@ struct UpdateCommand: AsyncParsableCommand {
             guard !trimmed.contains(where: { $0.isNewline }) else {
                 throw ThingsError.invalidState("--heading value cannot contain newlines")
             }
+            resolvedHeading = trimmed
+        } else {
+            resolvedHeading = nil
         }
 
         // Pre-validate auth token before any mutations to avoid partial updates
-        let needsURLScheme = when != nil || heading != nil
+        let needsURLScheme = when != nil || resolvedHeading != nil
         var prevalidatedToken: String? = nil
         if needsURLScheme {
             do {
@@ -287,7 +291,7 @@ struct UpdateCommand: AsyncParsableCommand {
         // Handle when and heading via Things URL scheme (activationDate is read-only in JXA)
         if needsURLScheme, let token = prevalidatedToken {
             do {
-                try updateViaURLScheme(id: id, when: when, heading: heading, token: token)
+                try updateViaURLScheme(id: id, when: when, heading: resolvedHeading, token: token)
             } catch {
                 if hasJXAUpdates {
                     let jxaFields = [name != nil ? "name" : nil, notes != nil ? "notes" : nil,
