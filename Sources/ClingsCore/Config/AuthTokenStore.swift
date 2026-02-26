@@ -31,13 +31,10 @@ public enum AuthTokenStore {
     public static func saveToken(_ token: String) throws {
         try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
         let tokenData = Data(token.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
-        let success = FileManager.default.createFile(
-            atPath: tokenFile.path,
-            contents: tokenData,
-            attributes: [.posixPermissions: 0o600]
+        try tokenData.write(to: tokenFile, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: tokenFile.path
         )
-        guard success else {
-            throw ThingsError.operationFailed("Failed to write auth token to \(tokenFile.path)")
-        }
     }
 }

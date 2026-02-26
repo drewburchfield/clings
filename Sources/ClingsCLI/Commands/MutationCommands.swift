@@ -219,6 +219,28 @@ struct UpdateCommand: AsyncParsableCommand {
             throw ThingsError.invalidState("No update options provided. Use --name, --notes, --due, --when, --heading, or --tags.")
         }
 
+        // Validate --when value if provided
+        if let when = when {
+            let validKeywords = Set(["today", "tomorrow", "evening", "anytime", "someday"])
+            let isKeyword = validKeywords.contains(when.lowercased())
+            let isDate = parseDate(when) != nil
+            guard isKeyword || isDate else {
+                throw ThingsError.invalidState(
+                    "Invalid --when value: '\(when)'. Use 'today', 'tomorrow', 'evening', 'anytime', 'someday', or YYYY-MM-DD."
+                )
+            }
+        }
+
+        // Pre-validate auth token before any mutations to avoid partial updates
+        let needsURLScheme = when != nil || heading != nil
+        if needsURLScheme {
+            guard (try? AuthTokenStore.loadToken()) != nil else {
+                throw ThingsError.invalidState(
+                    "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
+                )
+            }
+        }
+
         let client = ThingsClientFactory.create()
 
         // Parse due date if provided
@@ -243,7 +265,7 @@ struct UpdateCommand: AsyncParsableCommand {
         }
 
         // Handle when and heading via Things URL scheme (activationDate is read-only in JXA)
-        if when != nil || heading != nil {
+        if needsURLScheme {
             try updateViaURLScheme(id: id, when: when, heading: heading)
         }
 
@@ -251,7 +273,8 @@ struct UpdateCommand: AsyncParsableCommand {
             ? JSONOutputFormatter()
             : TextOutputFormatter(useColors: !output.noColor)
 
-        print(formatter.format(message: "Updated todo: \(id)"))
+        let urlSchemeNote = needsURLScheme ? " (--when/--heading sent via URL scheme; verify in Things)" : ""
+        print(formatter.format(message: "Updated todo: \(id)\(urlSchemeNote)"))
     }
 
     private func parseDate(_ str: String) -> Date? {
@@ -273,14 +296,8 @@ struct UpdateCommand: AsyncParsableCommand {
     }
 
     private func updateViaURLScheme(id: String, when: String?, heading: String?) throws {
-        let token: String
-        do {
-            token = try AuthTokenStore.loadToken()
-        } catch {
-            throw ThingsError.invalidState(
-                "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
-            )
-        }
+        // Token was pre-validated in run(), so this should not fail
+        let token = try AuthTokenStore.loadToken()
 
         var queryItems = [
             URLQueryItem(name: "auth-token", value: token),
@@ -302,7 +319,11 @@ struct UpdateCommand: AsyncParsableCommand {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = [url]
-        try process.run()
+        do {
+            try process.run()
+        } catch {
+            throw ThingsError.operationFailed("Failed to launch Things URL scheme handler: \(error.localizedDescription)")
+        }
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             throw ThingsError.operationFailed("Failed to update via Things URL scheme (exit code \(process.terminationStatus))")
