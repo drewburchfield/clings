@@ -240,6 +240,8 @@ struct UpdateCommand: AsyncParsableCommand {
                 throw ThingsError.invalidState(
                     "Things auth token required for --when/--heading. Set with: clings config set-auth-token <token>"
                 )
+            } catch let error as ThingsError {
+                throw error
             } catch {
                 throw ThingsError.operationFailed(
                     "Failed to read auth token: \(error.localizedDescription). Try re-setting with: clings config set-auth-token <token>"
