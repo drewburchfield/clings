@@ -48,6 +48,8 @@ public enum AuthTokenStore {
             let reason = String(cString: strerror(errno))
             throw ThingsError.operationFailed("Failed to open auth token file at \(path): \(reason)")
         }
+        // Enforce 0600 even on pre-existing files (open mode only applies on creation)
+        fchmod(fd, 0o600)
         defer { close(fd) }
         let written = tokenData.withUnsafeBytes { buffer in
             guard let base = buffer.baseAddress else { return -1 }
