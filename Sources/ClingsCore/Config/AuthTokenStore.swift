@@ -58,9 +58,16 @@ public enum AuthTokenStore {
             guard let base = buffer.baseAddress else { return -1 }
             return write(fd, base, buffer.count)
         }
+        let writeErrno = errno // Capture before defer's close() can clobber it
         guard written == tokenData.count else {
-            let reason = String(cString: strerror(errno))
-            throw ThingsError.operationFailed("Failed to write auth token to \(path): \(reason)")
+            if written < 0 {
+                let reason = String(cString: strerror(writeErrno))
+                throw ThingsError.operationFailed("Failed to write auth token to \(path): \(reason)")
+            } else {
+                throw ThingsError.operationFailed(
+                    "Failed to write auth token to \(path): short write (\(written) of \(tokenData.count) bytes)"
+                )
+            }
         }
     }
 }

@@ -231,10 +231,14 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
-        // Validate --heading is not empty/whitespace
+        // Validate --heading is not empty/whitespace and contains no newlines
         if let heading = heading {
-            guard !heading.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            let trimmed = heading.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
                 throw ThingsError.invalidState("--heading value cannot be empty")
+            }
+            guard !trimmed.contains(where: { $0.isNewline }) else {
+                throw ThingsError.invalidState("--heading value cannot contain newlines")
             }
         }
 
