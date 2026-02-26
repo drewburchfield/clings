@@ -233,7 +233,7 @@ struct UpdateCommand: AsyncParsableCommand {
 
         // Validate --heading is not empty/whitespace
         if let heading = heading {
-            guard !heading.trimmingCharacters(in: .whitespaces).isEmpty else {
+            guard !heading.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw ThingsError.invalidState("--heading value cannot be empty")
             }
         }
