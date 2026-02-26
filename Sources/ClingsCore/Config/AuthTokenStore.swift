@@ -28,13 +28,21 @@ public enum AuthTokenStore {
     }
 
     /// Save an auth token to the config directory with restricted permissions (0600).
+    /// Uses POSIX open() to ensure the file is never world-readable, even briefly.
     public static func saveToken(_ token: String) throws {
         try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
         let tokenData = Data(token.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
-        try tokenData.write(to: tokenFile, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: tokenFile.path
-        )
+        let path = tokenFile.path
+        let fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
+        guard fd >= 0 else {
+            throw ThingsError.operationFailed("Failed to open auth token file at \(path)")
+        }
+        defer { close(fd) }
+        let written = tokenData.withUnsafeBytes { buffer in
+            write(fd, buffer.baseAddress!, buffer.count)
+        }
+        guard written == tokenData.count else {
+            throw ThingsError.operationFailed("Failed to write auth token to \(path)")
+        }
     }
 }
