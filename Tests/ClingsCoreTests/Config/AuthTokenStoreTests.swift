@@ -1,6 +1,6 @@
 // AuthTokenStoreTests.swift
 // clings - A powerful CLI for Things 3
-// Copyright (C) 2024 Dan Hart
+// Copyright (C) 2026 Drew Burchfield
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import Foundation

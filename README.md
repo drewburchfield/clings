@@ -1,3 +1,5 @@
+![clings](https://ghrb.waren.build/banner?header=clings&subheader=Things+3+in+your+terminal&bg=1a1a2e&color=e0e0e0&support=true)
+
 # clings - a feature-rich cli for Things 3 on macOS
 
 > "clings" rhymes with "things"

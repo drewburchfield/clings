@@ -1,0 +1,16 @@
+clings - A powerful CLI for Things 3 on macOS
+Copyright (C) 2024 Dan Hart
+
+This fork includes modifications by Drew Burchfield (2026):
+- Added --when flag for scheduling todos via Things URL scheme
+- Added --heading flag for organizing todos within project headings
+- Added auth token management (clings config set-auth-token)
+- Added AuthTokenStore with secure POSIX file operations
+- Fixed README to match actual CLI commands
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+See LICENSE for the full license text.
