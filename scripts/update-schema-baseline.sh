@@ -38,11 +38,11 @@ echo "Using database: $DB_PATH"
 
 TABLES="TMTask TMArea TMTag TMTaskTag TMAreaTag TMChecklistItem"
 
-python3 -c "
+python3 - "$DB_PATH" "$TABLES" > "$BASELINE_FILE" <<'PYTHON_SCRIPT'
 import sqlite3, json, sys
 
-db_path = '$DB_PATH'
-tables = '$TABLES'.split()
+db_path = sys.argv[1]
+tables = sys.argv[2].split()
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 schema = {}
@@ -65,7 +65,7 @@ for table in tables:
 
 conn.close()
 print(json.dumps(schema, indent=2))
-" > "$BASELINE_FILE"
+PYTHON_SCRIPT
 
 echo "Schema baseline updated: $BASELINE_FILE"
 echo "Tables captured: $TABLES"

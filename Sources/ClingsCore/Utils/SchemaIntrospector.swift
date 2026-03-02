@@ -9,11 +9,14 @@ import GRDB
 /// Errors from schema introspection.
 public enum SchemaIntrospectorError: LocalizedError {
     case invalidTableName(String)
+    case tableNotFound(String)
 
     public var errorDescription: String? {
         switch self {
         case .invalidTableName(let name):
             return "Table name '\(name)' is not in the allowed list"
+        case .tableNotFound(let name):
+            return "Table '\(name)' does not exist in the database"
         }
     }
 }
@@ -69,8 +72,12 @@ public enum SchemaIntrospector {
             var schemas: [String: TableSchema] = [:]
 
             for table in tables {
-                // Table name is validated against allowlist above
+                // PRAGMA does not support bound parameters for table names.
+                // Safety is enforced by the allowlist check above; do not remove it.
                 let rows = try Row.fetchAll(db, sql: "PRAGMA table_info(\(table))")
+                guard !rows.isEmpty else {
+                    throw SchemaIntrospectorError.tableNotFound(table)
+                }
                 let columns = rows.map { row in
                     ColumnInfo(
                         cid: row["cid"],

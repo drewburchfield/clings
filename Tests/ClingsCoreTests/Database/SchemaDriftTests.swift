@@ -145,4 +145,19 @@ final class SchemaDriftTests: XCTestCase {
         // TMTask should have 41 columns in baseline
         XCTAssertEqual(baseline["TMTask"]?.column_count, Self.expectedTMTaskColumnCount)
     }
+
+    func testIntrospectorRejectsDisallowedTableName() throws {
+        let builder = try TestDatabaseBuilder()
+        XCTAssertThrowsError(
+            try SchemaIntrospector.introspect(
+                databasePath: builder.path,
+                tables: ["DropTable; --"]
+            )
+        ) { error in
+            XCTAssertTrue(
+                error is SchemaIntrospectorError,
+                "Expected SchemaIntrospectorError, got \(type(of: error))"
+            )
+        }
+    }
 }

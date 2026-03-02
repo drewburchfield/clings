@@ -182,11 +182,11 @@ final class ThingsDatabaseTests: XCTestCase {
         }
     }
 
-    func testFetchTodoWithProjectIdReturnsResult() throws {
-        // Fetching by a project's UUID should still return a result
-        // (fetchTodo queries TMTask which includes projects as type=1)
-        let todo = try db.fetchTodo(id: DatabaseTestFixtures.projectId)
-        XCTAssertEqual(todo.name, "Ship v1.0")
+    func testFetchTodoWithProjectIdThrowsNotFound() throws {
+        // fetchTodo filters type = 0 (todos only), so projects (type=1) are excluded
+        XCTAssertThrowsError(try db.fetchTodo(id: DatabaseTestFixtures.projectId)) { error in
+            XCTAssertTrue(error is ThingsError, "Expected ThingsError, got \(type(of: error))")
+        }
     }
 
     // MARK: - Tags
