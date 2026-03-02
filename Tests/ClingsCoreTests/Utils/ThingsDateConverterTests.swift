@@ -84,6 +84,11 @@ final class ThingsDateConverterTests: XCTestCase {
         XCTAssertNil(ThingsDateConverter.decode(0))
     }
 
+    func testDecodeNegativeReturnsNil() {
+        XCTAssertNil(ThingsDateConverter.decode(-1))
+        XCTAssertNil(ThingsDateConverter.decodeToDate(-1))
+    }
+
     // MARK: - Date Roundtrip
 
     func testEncodeDateRoundtrip() {

@@ -177,7 +177,9 @@ public final class ThingsDatabase: Sendable {
                 let deadline: Date? = (row["deadline"] as Int?).flatMap {
                     ThingsDateConverter.decodeToDate($0)
                 }
-                let creationDate = Date(timeIntervalSince1970: TimeInterval(row["creationDate"] as Double))
+                let creationDate = (row["creationDate"] as Double?).flatMap {
+                    Date(timeIntervalSince1970: $0)
+                } ?? Date()
 
                 return Project(
                     id: uuid,
