@@ -45,7 +45,7 @@ struct CompleteCommand: AsyncParsableCommand {
     @OptionGroup var output: OutputOptions
 
     func run() async throws {
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
 
         let formatter: OutputFormatter = output.json
             ? JSONOutputFormatter()
@@ -114,7 +114,7 @@ struct ReopenCommand: AsyncParsableCommand {
     @OptionGroup var output: OutputOptions
 
     func run() async throws {
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
         try await client.reopenTodo(id: id)
 
         let formatter: OutputFormatter = output.json
@@ -153,7 +153,7 @@ struct CancelCommand: AsyncParsableCommand {
     @OptionGroup var output: OutputOptions
 
     func run() async throws {
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
         try await client.cancelTodo(id: id)
 
         let formatter: OutputFormatter = output.json
@@ -196,7 +196,7 @@ struct DeleteCommand: AsyncParsableCommand {
     @OptionGroup var output: OutputOptions
 
     func run() async throws {
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
         try await client.deleteTodo(id: id)
 
         let formatter: OutputFormatter = output.json
@@ -302,7 +302,7 @@ struct UpdateCommand: AsyncParsableCommand {
             }
         }
 
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
 
         // Parse deadline date if provided
         var deadlineDate: Date? = nil

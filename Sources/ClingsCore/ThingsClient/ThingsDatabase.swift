@@ -11,8 +11,26 @@ import GRDB
 public final class ThingsDatabase: Sendable {
     private let dbPath: String
 
-    /// Initialize with the Things 3 database path.
-    public init() throws {
+    /// The resolved path to the SQLite database file.
+    public var path: String { dbPath }
+
+    /// Initialize with an optional explicit database path.
+    ///
+    /// Resolution order:
+    /// 1. Explicit `databasePath` parameter (if provided)
+    /// 2. `CLINGS_DB_PATH` environment variable (if set)
+    /// 3. Auto-discovery from Things 3 group container
+    public init(databasePath: String? = nil) throws {
+        if let explicit = databasePath {
+            self.dbPath = explicit
+            return
+        }
+
+        if let envPath = ProcessInfo.processInfo.environment["CLINGS_DB_PATH"] {
+            self.dbPath = envPath
+            return
+        }
+
         // Find the Things database - it may be in a ThingsData-XXXX subdirectory
         let groupContainerBase = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac")

@@ -77,7 +77,7 @@ struct AddCommand: AsyncParsableCommand {
             return
         }
 
-        let client = ThingsClientFactory.create()
+        let client = try ThingsClientFactory.create()
         _ = try await client.createTodo(
             name: parsed.title,
             notes: parsed.notes,
