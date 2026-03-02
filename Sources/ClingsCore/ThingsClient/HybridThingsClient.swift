@@ -10,8 +10,8 @@ public final class HybridThingsClient: ThingsClientProtocol, @unchecked Sendable
     private let database: ThingsDatabase
     private let jxaBridge: JXABridge
 
-    public init() throws {
-        self.database = try ThingsDatabase()
+    public init(databasePath: String? = nil) throws {
+        self.database = try ThingsDatabase(databasePath: databasePath)
         self.jxaBridge = JXABridge()
     }
 
@@ -231,11 +231,17 @@ public final class HybridThingsClient: ThingsClientProtocol, @unchecked Sendable
 /// Factory to create the appropriate Things client.
 public enum ThingsClientFactory {
     /// Create a Things client - tries hybrid first, falls back to JXA-only.
-    public static func create() -> any ThingsClientProtocol {
+    ///
+    /// When an explicit `databasePath` is provided, failure is thrown rather
+    /// than silently falling back to JXA-only. Auto-discovery failures still
+    /// fall back gracefully.
+    public static func create(databasePath: String? = nil) throws -> any ThingsClientProtocol {
+        if databasePath != nil {
+            return try HybridThingsClient(databasePath: databasePath)
+        }
         do {
             return try HybridThingsClient()
         } catch {
-            // Fall back to JXA-only client if database not available
             return ThingsClient()
         }
     }
