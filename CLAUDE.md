@@ -268,11 +268,11 @@ When releasing a new version:
 
 1. **Get the SHA256 checksum** for the new release tarball:
    ```bash
-   curl -sL https://github.com/dan-hart/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256
+   curl -sL https://github.com/drewburchfield/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256
    ```
 
 2. **Update the formula** in the homebrew-tap repository:
-   - Repository: https://github.com/dan-hart/homebrew-tap
+   - Repository: https://github.com/drewburchfield/homebrew-tap
    - File: `Formula/clings.rb`
    - Update the `url` to point to the new version tag
    - Update the `sha256` with the new checksum
@@ -302,8 +302,8 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - Never add Claude as a co-author on commits
 - **Always update the Homebrew tap when releasing a new version:**
   1. Update version in code
-  2. Commit, tag (e.g., `v0.2.1`), and push to all remotes
-  3. Get SHA256: `curl -sL https://github.com/dan-hart/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256`
-  4. Update `~/Developer/homebrew-tap/Formula/clings.rb` with new version and SHA256
+  2. Commit, tag (e.g., `v0.3.0`), and push
+  3. Get SHA256: `curl -sL https://github.com/drewburchfield/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256`
+  4. Update `drewburchfield/homebrew-tap` Formula/clings.rb with new version and SHA256
   5. Commit and push homebrew-tap
   6. Run `brew update && brew upgrade clings` to verify

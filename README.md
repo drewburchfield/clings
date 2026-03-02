@@ -205,7 +205,7 @@ The auth token is stored at `~/.config/clings/auth-token` with restricted permis
 ### Homebrew (Recommended)
 
 ```bash
-brew install dan-hart/tap/clings
+brew install drewburchfield/tap/clings
 ```
 
 To upgrade to the latest version:
@@ -218,7 +218,7 @@ brew update && brew upgrade clings
 
 ```bash
 # Clone the repository
-git clone https://github.com/dan-hart/clings
+git clone https://github.com/drewburchfield/clings
 cd clings
 
 # Build release binary
