@@ -256,33 +256,23 @@ Every PR must pass:
 
 ### Release Process
 
-On tag push:
-1. Build release binaries (macOS ARM64, macOS x86_64)
-2. Generate shell completions
-3. Create GitHub release with artifacts
-4. Update Homebrew formula
+Releases are automated via GitHub Actions (`.github/workflows/release.yml`). The workflow triggers on tag push matching `v*` and handles building, testing, GitHub Release creation, and Homebrew tap updates.
 
-### Updating Homebrew Formula
+**To release a new version:**
 
-When releasing a new version:
+1. Update `version` in `Sources/ClingsCLI/Clings.swift`
+2. Add a `## [X.Y.Z]` section to `CHANGELOG.md`
+3. Commit and merge to main
+4. Run `scripts/release.sh X.Y.Z`
 
-1. **Get the SHA256 checksum** for the new release tarball:
-   ```bash
-   curl -sL https://github.com/drewburchfield/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256
-   ```
+The script validates your working tree, version match, and changelog entry, then creates an annotated tag and pushes it. GitHub Actions handles the rest:
+- Validates tag matches source version
+- Builds release binary (macOS ARM64)
+- Runs tests
+- Creates GitHub Release with changelog excerpt and binary
+- Updates `drewburchfield/homebrew-tap` Formula/clings.rb with new URL and SHA256
 
-2. **Update the formula** in the homebrew-tap repository:
-   - Repository: https://github.com/drewburchfield/homebrew-tap
-   - File: `Formula/clings.rb`
-   - Update the `url` to point to the new version tag
-   - Update the `sha256` with the new checksum
-
-3. **Commit and push** the formula changes
-
-4. **Verify** the update works:
-   ```bash
-   brew update && brew upgrade clings
-   ```
+**Required secret:** `HOMEBREW_TAP_PAT` - fine-grained PAT scoped to `drewburchfield/homebrew-tap` with `Contents: Read and Write` permission. Set at `github.com/drewburchfield/clings/settings/secrets/actions`.
 
 ## Contributing
 
@@ -300,10 +290,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ## Claude Directives
 
 - Never add Claude as a co-author on commits
-- **Always update the Homebrew tap when releasing a new version:**
-  1. Update version in code
-  2. Commit, tag (e.g., `v0.3.0`), and push
-  3. Get SHA256: `curl -sL https://github.com/drewburchfield/clings/archive/refs/tags/v<VERSION>.tar.gz | shasum -a 256`
-  4. Update `drewburchfield/homebrew-tap` Formula/clings.rb with new version and SHA256
-  5. Commit and push homebrew-tap
-  6. Run `brew update && brew upgrade clings` to verify
+- **Releases are automated.** When releasing a new version, update the version in `Clings.swift` and `CHANGELOG.md`, commit, then run `scripts/release.sh <version>`. Do not manually update the Homebrew tap; the release workflow handles it.
